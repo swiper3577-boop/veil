@@ -465,9 +465,9 @@ local function autoMineSell()
     end)
 end
 
-local function autoUpgrade(upgradeId)
+local function autoUpgrade(toggleName, upgradeId)
     task.spawn(function()
-        while Toggles[upgradeId] do
+        while Toggles[toggleName] do
             rs.NewUpgradesRemote:FireServer("PurchaseUpgrade", {
                 upgradeId = upgradeId,
                 upgradeType = "coins"
@@ -494,7 +494,7 @@ Tab:CreateToggle({
     Flag = "SellValue",
     Callback = function(state)
         Toggles.SellValue = state
-        if state then autoUpgrade("sellValue") end
+        if state then autoUpgrade("SellValue", "sellValue") end
     end
 })
 
@@ -504,7 +504,7 @@ Tab:CreateToggle({
     Flag = "GemChances",
     Callback = function(state)
         Toggles.GemChances = state
-        if state then autoUpgrade("gemChances") end
+        if state then autoUpgrade("GemChances", "gemChances") end
     end
 })
 
@@ -514,7 +514,7 @@ Tab:CreateToggle({
     Flag = "MiningSpeed",
     Callback = function(state)
         Toggles.MiningSpeed = state
-        if state then autoUpgrade("miningSpeed") end
+        if state then autoUpgrade("MiningSpeed", "miningSpeed") end
     end
 })
 
@@ -524,7 +524,67 @@ Tab:CreateToggle({
     Flag = "OreLuck",
     Callback = function(state)
         Toggles.OreLuck = state
-        if state then autoUpgrade("oreLuck") end
+        if state then autoUpgrade("OreLuck", "oreLuck") end
+    end
+})
+
+--// Misc Tab
+local MiscTab = Window:CreateTab("Misc")
+
+--// Section
+local MiscSection = MiscTab:CreateSection("General")
+
+-- WalkSpeed Slider
+MiscTab:CreateSlider({
+    Name = "WalkSpeed",
+    Range = {16, 200},
+    Increment = 1,
+    Suffix = "Studs",
+    CurrentValue = 16,
+    Callback = function(value)
+        if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
+            game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = value
+        end
+    end
+})
+
+-- JumpPower Slider
+MiscTab:CreateSlider({
+    Name = "JumpPower",
+    Range = {50, 500},
+    Increment = 1,
+    Suffix = "Studs",
+    CurrentValue = 50,
+    Callback = function(value)
+        if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
+            game.Players.LocalPlayer.Character.Humanoid.JumpPower = value
+        end
+    end
+})
+
+-- Refresh GUI Button
+MiscTab:CreateButton({
+    Name = "Refresh GUI",
+    Callback = function()
+        pcall(function()
+            for _,v in pairs(game.CoreGui:GetChildren()) do
+                if v.Name:match("Rayfield") then
+                    v:Destroy()
+                end
+            end
+        end)
+
+        task.wait(0.5)
+
+        pcall(function()
+            local ok, rf = pcall(function()
+                return loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+            end)
+            if ok and rf then
+                _G.MainRayfield = rf
+                loadMainScript() -- make sure your main hub function exists
+            end
+        end)
     end
 })
 
