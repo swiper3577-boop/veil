@@ -208,7 +208,7 @@ local function verifyKey(key)
                     return true
                 end
             else
-                if fStringSub(key, 1, 4) == "KEY_" then
+                if fStringSub(key, 1, 4) == "FREE" then
                     return redeemKey(key)
                 else
                     onMessage("key is invalid.")
@@ -259,70 +259,51 @@ local function getFlag(name)
         return nil
     end
 end
+--// Services
+local rs = game:GetService("ReplicatedStorage")
+local ws = game:GetService("Workspace")
+local Players = game:GetService("Players")
 
--------------------------------------------------------------------------------
--- Rayfield usage (fixed interaction points)
-local Rayfield = nil
-local success, rf = pcall(function()
-    return loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-end)
-if success and rf then
-    Rayfield = rf
-else
-    -- fallback: notify via StarterGui if Rayfield failed to load
-    Rayfield = nil
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "UI Load Error",
-        Text = "Failed to load Rayfield UI. Script terminated.",
-        Duration = 5
-    })
-    return
-end
-
-local keyVerified = false
-
-onMessage = function(message)
-    if Rayfield then
-        Rayfield:Notify({
-            Title = "Key System",
-            Content = message,
-            Duration = 5,
-            Image = 0
-        })
+--// Key System (separate Rayfield instance)
+local KeyRayfield
+do
+    local success, rf = pcall(function()
+        return loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+    end)
+    if success and rf then
+        KeyRayfield = rf
     else
-        pcall(function()
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "Key System",
-                Text = tostring(message),
-                Duration = 5
-            })
-        end)
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "UI Load Error",
+            Text = "Failed to load Key System UI",
+            Duration = 5
+        })
+        return
     end
 end
 
-local KeyWindow = Rayfield:CreateWindow({
-    Name = "Key System - Your Script",
-    Icon = 0,
+local keyVerified = false
+local KeyValue = ""
+
+local function onKeyMessage(msg)
+    KeyRayfield:Notify({
+        Title = "Key System",
+        Content = msg,
+        Duration = 5,
+        Image = 0
+    })
+end
+
+local KeyWindow = KeyRayfield:CreateWindow({
+    Name = "Key System",
     LoadingTitle = "Loading Key System",
     LoadingSubtitle = "by Platoboost",
-    Theme = "Default",
-    DisableRayfieldPrompts = false,
-    DisableBuildWarnings = false,
     ConfigurationSaving = { Enabled = false },
-    Discord = { Enabled = false },
     KeySystem = false
 })
 
-local KeyTab = KeyWindow:CreateTab("Key System", 4483362458)
-local KeySection = KeyTab:CreateSection("Authentication Required")
-
-KeyTab:CreateParagraph({
-    Title = "How to Get a Key",
-    Content = "1. Click 'Get Key' button below\n2. Complete tasks in your browser\n3. Copy the key you receive\n4. Paste it below and click Verify"
-})
-
--- store the key reliably
-local KeyValue = ""
+local KeyTab = KeyWindow:CreateTab("Key System")
+KeyTab:CreateSection("Authentication Required")
 
 local KeyInput = KeyTab:CreateInput({
     Name = "Enter Key",
@@ -337,195 +318,201 @@ KeyTab:CreateButton({
     Name = "Get Key (Copy Link)",
     Callback = function()
         copyLink()
-        pcall(function()
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "Link Copied!",
-                Text = "Paste in browser to get your key!",
-                Duration = 6
-            })
-        end)
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Link Copied",
+            Text = "Paste in browser to get your key",
+            Duration = 5
+        })
     end
 })
 
 KeyTab:CreateButton({
     Name = "Verify Key",
     Callback = function()
-        local key = KeyValue or ""
-        if key == "" then
-            pcall(function()
-                game:GetService("StarterGui"):SetCore("SendNotification", {
-                    Title = "Error",
-                    Text = "Please enter a key first!",
-                    Duration = 3
-                })
-            end)
+        if KeyValue == "" then
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "Error",
+                Text = "Enter a key first",
+                Duration = 3
+            })
             return
         end
 
-        pcall(function()
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "Verifying",
-                Text = "Please wait while we verify your key...",
-                Duration = 3
-            })
-        end)
-
         task.spawn(function()
-            local ok = false
-            local success, res = pcall(function() return verifyKey(key) end)
-            if success then ok = res end
-
-            if ok then
+            if verifyKey(KeyValue) then
                 keyVerified = true
+                game:GetService("StarterGui"):SetCore("SendNotification", {
+                    Title = "Success",
+                    Text = "Key verified! Loading script...",
+                    Duration = 2
+                })
+
+                -- destroy old key UI
                 pcall(function()
-                    game:GetService("StarterGui"):SetCore("SendNotification", {
-                        Title = "Success!",
-                        Text = "Key verified! Loading script...",
-                        Duration = 2
-                    })
+                    for _, v in pairs(game.CoreGui:GetChildren()) do
+                        if v.Name:match("Rayfield") then v:Destroy() end
+                    end
                 end)
 
-                -- destroy old GUI but keep library intact
-pcall(function()
-    for _,v in pairs(game.CoreGui:GetChildren()) do
-        if v.Name:match("Rayfield") then v:Destroy() end
-    end
-end)
-
-task.wait(0.5)
-
--- make a completely new Rayfield instance for the main hub
-pcall(function()
-    local ok, rf = pcall(function()
-        return loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
-    end)
-    if ok and rf then
-        _G.MainRayfield = rf
-        loadMainScript()
-    else
-        warn("Failed to reload Rayfield for main hub.")
-    end
-end)
+                -- load main auto hub
+                loadMainScript()
             else
-                pcall(function()
-                    game:GetService("StarterGui"):SetCore("SendNotification", {
-                        Title = "Failed",
-                        Text = "Invalid key. Please try again.",
-                        Duration = 5
-                    })
-                end)
+                game:GetService("StarterGui"):SetCore("SendNotification", {
+                    Title = "Failed",
+                    Text = "Invalid key",
+                    Duration = 5
+                })
             end
         end)
     end
 })
 
-KeyTab:CreateSection("Information")
-KeyTab:CreateParagraph({
-    Title = "Need Help?",
-    Content = "If you're having issues:\n• Make sure you completed all tasks\n• Try getting a new key\n• Check your internet connection\n• Wait 20s if rate limited"
-})
-
--- persistent connection holders
---// Services
-local rs = game:GetService("ReplicatedStorage")
-local ws = game:GetService("Workspace")
---// Window
-local Window = Rayfield:CreateWindow({
-    Name = "Platoboost | Auto System",
-    LoadingTitle = "Platoboost",
-    LoadingSubtitle = "by you",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "Platoboost",
-        FileName = "AutoSettings"
-    }
-})
-
---// Tab
-local Tab = Window:CreateTab("Auto")
-
---// Toggles storage
-local Toggles = {
-    Mine = false,
-    SellValue = false,
-    GemChances = false,
-    MiningSpeed = false,
-    OreLuck = false
-}
-
---// Functions
-local function autoMineSell()
-    task.spawn(function()
-        local sell = ws.ProximitySellPart.ClickDetector
-        while Toggles.Mine do
-            rs.MiningRemote:FireServer("Mine")
-            fireclickdetector(sell)
-            task.wait(0.2)
-        end
-    end)
-end
-
-local function autoUpgrade(toggleName, upgradeId)
-    task.spawn(function()
-        while Toggles[toggleName] do
-            rs.NewUpgradesRemote:FireServer("PurchaseUpgrade", {
-                upgradeId = upgradeId,
-                upgradeType = "coins"
+--// Main Script Loader
+function loadMainScript()
+    local Rayfield
+    do
+        local success, rf = pcall(function()
+            return loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+        end)
+        if success and rf then
+            Rayfield = rf
+        else
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "UI Load Error",
+                Text = "Failed to load Main Hub",
+                Duration = 5
             })
-            task.wait(0.5)
+            return
         end
-    end)
+    end
+
+    --// Window
+    local Window = Rayfield:CreateWindow({
+        Name = "Platoboost | Auto System",
+        LoadingTitle = "Platoboost",
+        LoadingSubtitle = "by you",
+        ConfigurationSaving = {
+            Enabled = true,
+            FolderName = "Platoboost",
+            FileName = "AutoSettings"
+        }
+    })
+
+    --// Tabs
+    local AutoTab = Window:CreateTab("Auto")
+    local MiscTab = Window:CreateTab("Misc")
+
+    --// Toggles storage
+    local Toggles = {
+        Mine = false,
+        SellValue = false,
+        GemChances = false,
+        MiningSpeed = false,
+        OreLuck = false
+    }
+
+    --// Functions
+    local function autoMineSell()
+        task.spawn(function()
+            local sell = ws.ProximitySellPart.ClickDetector
+            while Toggles.Mine do
+                rs.MiningRemote:FireServer("Mine")
+                fireclickdetector(sell)
+                task.wait(0.2)
+            end
+        end)
+    end
+
+    local function autoUpgrade(toggleName, upgradeId)
+        task.spawn(function()
+            while Toggles[toggleName] do
+                rs.NewUpgradesRemote:FireServer("PurchaseUpgrade", {
+                    upgradeId = upgradeId,
+                    upgradeType = "coins"
+                })
+                task.wait(0.5)
+            end
+        end)
+    end
+
+    --// Auto Tab Toggles
+    AutoTab:CreateToggle({
+        Name = "Auto Mine + Sell",
+        CurrentValue = false,
+        Flag = "Mine",
+        Callback = function(state)
+            Toggles.Mine = state
+            if state then autoMineSell() end
+        end
+    })
+
+    AutoTab:CreateToggle({
+        Name = "Auto Buy Sell Value",
+        CurrentValue = false,
+        Flag = "SellValue",
+        Callback = function(state)
+            Toggles.SellValue = state
+            if state then autoUpgrade("SellValue", "sellValue") end
+        end
+    })
+
+    AutoTab:CreateToggle({
+        Name = "Auto Buy Gem Chances",
+        CurrentValue = false,
+        Flag = "GemChances",
+        Callback = function(state)
+            Toggles.GemChances = state
+            if state then autoUpgrade("GemChances", "gemChances") end
+        end
+    })
+
+    AutoTab:CreateToggle({
+        Name = "Auto Buy Mining Speed",
+        CurrentValue = false,
+        Flag = "MiningSpeed",
+        Callback = function(state)
+            Toggles.MiningSpeed = state
+            if state then autoUpgrade("MiningSpeed", "miningSpeed") end
+        end
+    })
+
+    AutoTab:CreateToggle({
+        Name = "Auto Buy Ore Luck",
+        CurrentValue = false,
+        Flag = "OreLuck",
+        Callback = function(state)
+            Toggles.OreLuck = state
+            if state then autoUpgrade("OreLuck", "oreLuck") end
+        end
+    })
+
+    --// Misc Tab Example
+    MiscTab:CreateSection("Misc Options")
+    MiscTab:CreateButton({
+        Name = "Teleport to Spawn",
+        Callback = function()
+            local hrp = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                hrp.CFrame = CFrame.new(0,5,0)
+            end
+        end
+    })
+
+    MiscTab:CreateToggle({
+        Name = "Infinite Jump",
+        CurrentValue = false,
+        Flag = "InfJump",
+        Callback = function(state)
+            if state then
+                game:GetService("UserInputService").JumpRequest:Connect(function()
+                    local plr = Players.LocalPlayer
+                    if plr.Character then
+                        plr.Character:FindFirstChildOfClass("Humanoid").Jump = true
+                    end
+                end)
+            end
+        end
+    })
+
+    Rayfield:LoadConfiguration()
 end
-
---// UI Toggles
-Tab:CreateToggle({
-    Name = "Auto Mine + Sell",
-    CurrentValue = false,
-    Flag = "Mine",
-    Callback = function(state)
-        Toggles.Mine = state
-        if state then autoMineSell() end
-    end
-})
-
-Tab:CreateToggle({
-    Name = "Auto Buy Sell Value",
-    CurrentValue = false,
-    Flag = "SellValue",
-    Callback = function(state)
-        Toggles.SellValue = state
-        if state then autoUpgrade("SellValue", "sellValue") end
-    end
-})
-
-Tab:CreateToggle({
-    Name = "Auto Buy Gem Chances",
-    CurrentValue = false,
-    Flag = "GemChances",
-    Callback = function(state)
-        Toggles.GemChances = state
-        if state then autoUpgrade("GemChances", "gemChances") end
-    end
-})
-
-Tab:CreateToggle({
-    Name = "Auto Buy Mining Speed",
-    CurrentValue = false,
-    Flag = "MiningSpeed",
-    Callback = function(state)
-        Toggles.MiningSpeed = state
-        if state then autoUpgrade("MiningSpeed", "miningSpeed") end
-    end
-})
-
-Tab:CreateToggle({
-    Name = "Auto Buy Ore Luck",
-    CurrentValue = false,
-    Flag = "OreLuck",
-    Callback = function(state)
-        Toggles.OreLuck = state
-        if state then autoUpgrade("OreLuck", "oreLuck") end
-    end
-})
-
-Rayfield:LoadConfiguration()
