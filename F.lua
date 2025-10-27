@@ -261,7 +261,7 @@ local function getFlag(name)
 end
 --// Services
 local rs = game:GetService("ReplicatedStorage")
-local ws = game:GetService("Workspace")
+local workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
 
 --// Key System (separate Rayfield instance)
@@ -498,9 +498,9 @@ end
 task.spawn(function()
     repeat task.wait(0.5) until workspace:FindFirstChild("MainCave")
     local caveParts = {
-        Easy = ws.MainCave:FindFirstChild("EasyComplete"),
-        Medium = ws.MainCave:FindFirstChild("MediumComplete"),
-        Hard = ws.MainCave:FindFirstChild("HardComplete")
+        Easy = workspace.MainCave:FindFirstChild("EasyComplete"),
+        Medium = workspace.MainCave:FindFirstChild("MediumComplete"),
+        Hard = workspace.MainCave:FindFirstChild("HardComplete")
     }
 
     for name, part in pairs(caveParts) do
