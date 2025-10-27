@@ -385,17 +385,27 @@ KeyTab:CreateButton({
                     })
                 end)
 
-                task.wait(1)
-                pcall(function()
+                -- destroy old GUI but keep library intact
+pcall(function()
     for _,v in pairs(game.CoreGui:GetChildren()) do
         if v.Name:match("Rayfield") then v:Destroy() end
     end
 end)
-Rayfield.Tabs = {}
-Rayfield.Flags = {}
-Rayfield.Theme = Rayfield.Theme or "Default"
+
 task.wait(0.5)
-pcall(loadMainScript)
+
+-- make a completely new Rayfield instance for the main hub
+pcall(function()
+    local ok, rf = pcall(function()
+        return loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+    end)
+    if ok and rf then
+        _G.MainRayfield = rf
+        loadMainScript()
+    else
+        warn("Failed to reload Rayfield for main hub.")
+    end
+end)
             else
                 pcall(function()
                     game:GetService("StarterGui"):SetCore("SendNotification", {
@@ -420,8 +430,9 @@ local InfiniteJumpConn = nil
 local AntiAFKConn = nil
 
 function loadMainScript()
-    local MainWindow = Rayfield:CreateWindow({
-        Name = "Your Script Hub",
+      local Rayfield = _G.MainRayfield
+      local MainWindow = Rayfield:CreateWindow({
+      Name = "Your Script Hub",
         Icon = 0,
         LoadingTitle = "Script Loaded Successfully",
         LoadingSubtitle = "Welcome!",
