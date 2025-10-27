@@ -298,7 +298,7 @@ local KeyWindow = KeyRayfield:CreateWindow({
     Name = "Key System",
     LoadingTitle = "Loading Key System",
     LoadingSubtitle = "by Platoboost",
-    ConfigurationSaving = { Enabled = false },
+    ConfigurationSaving = { Enabled = true },
     KeySystem = false
 })
 
@@ -392,7 +392,7 @@ function loadMainScript()
         LoadingTitle = "Platoboost",
         LoadingSubtitle = "by you",
         ConfigurationSaving = {
-            Enabled = true,
+            Enabled = false,
             FolderName = "Platoboost",
             FileName = "AutoSettings"
         }
