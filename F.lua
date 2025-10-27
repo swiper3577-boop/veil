@@ -400,8 +400,7 @@ function loadMainScript()
 
     --// Tabs
     local AutoTab = Window:CreateTab("Auto")
-    local MiscTab = Window:CreateTab("Misc")
-
+    local TeleportsTab = Window:CreateTab("Teleports")
     --// Toggles storage
     local Toggles = {
         Mine = false,
