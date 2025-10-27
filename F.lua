@@ -486,8 +486,6 @@ function loadMainScript()
     })
 
 --// Teleports Tab
-local TeleportsTab = Window:CreateTab("Teleports")
-
 TeleportsTab:CreateSection("Cave Teleports")
 
 local function teleportTo(part)
