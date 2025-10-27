@@ -491,27 +491,29 @@ TeleportsTab:CreateSection("Cave Teleports")
 local function teleportTo(part)
     local hrp = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if hrp and part then
-        hrp.CFrame = part.CFrame + Vector3.new(0, 3, 0) -- small offset above the part
+        hrp.CFrame = part.CFrame + Vector3.new(0, 3, 0)
     end
 end
 
--- Add buttons
-local caveParts = {
-    Easy = workspace.MainCave:FindFirstChild("EasyComplete"),
-    Medium = workspace.MainCave:FindFirstChild("MediumComplete"),
-    Hard = workspace.MainCave:FindFirstChild("HardComplete")
-}
+task.spawn(function()
+    repeat task.wait(0.5) until workspace:FindFirstChild("MainCave")
+    local caveParts = {
+        Easy = workspace.MainCave:FindFirstChild("EasyComplete"),
+        Medium = workspace.MainCave:FindFirstChild("MediumComplete"),
+        Hard = workspace.MainCave:FindFirstChild("HardComplete")
+    }
 
-for name, part in pairs(caveParts) do
-    if part then
-        TeleportsTab:CreateButton({
-            Name = "Teleport to "..name.." Cave",
-            Callback = function()
-                teleportTo(part)
-            end
-        })
+    for name, part in pairs(caveParts) do
+        if part then
+            TeleportsTab:CreateButton({
+                Name = "Teleport to "..name.." Cave",
+                Callback = function()
+                    teleportTo(part)
+                end
+            })
+        end
     end
- end
+end)
  
     Rayfield:LoadConfiguration()
 end
