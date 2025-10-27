@@ -429,10 +429,6 @@ KeyTab:CreateParagraph({
 --// Services
 local rs = game:GetService("ReplicatedStorage")
 local ws = game:GetService("Workspace")
-
---// Rayfield Loader
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-
 --// Window
 local Window = Rayfield:CreateWindow({
     Name = "Platoboost | Auto System",
