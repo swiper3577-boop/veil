@@ -386,9 +386,13 @@ KeyTab:CreateButton({
                 end)
 
                 task.wait(1)
-                pcall(function() Rayfield:Destroy() end)
-                task.wait(0.5)
-                pcall(loadMainScript)
+                pcall(function()
+    for _,v in pairs(game.CoreGui:GetChildren()) do
+        if v.Name:match("Rayfield") then v:Destroy() end
+    end
+end)
+task.wait(0.5)
+pcall(loadMainScript)
             else
                 pcall(function()
                     game:GetService("StarterGui"):SetCore("SendNotification", {
