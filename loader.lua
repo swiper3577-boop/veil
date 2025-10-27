@@ -391,6 +391,9 @@ KeyTab:CreateButton({
         if v.Name:match("Rayfield") then v:Destroy() end
     end
 end)
+Rayfield.Tabs = {}
+Rayfield.Flags = {}
+Rayfield.Theme = Rayfield.Theme or "Default"
 task.wait(0.5)
 pcall(loadMainScript)
             else
