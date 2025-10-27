@@ -486,33 +486,35 @@ function loadMainScript()
         end
     })
 
-    --// Misc Tab Example
-    MiscTab:CreateSection("Misc Options")
-    MiscTab:CreateButton({
-        Name = "Teleport to Spawn",
-        Callback = function()
-            local hrp = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                hrp.CFrame = CFrame.new(0,5,0)
-            end
-        end
-    })
+--// Teleports Tab
+local TeleportsTab = Window:CreateTab("Teleports")
 
-    MiscTab:CreateToggle({
-        Name = "Infinite Jump",
-        CurrentValue = false,
-        Flag = "InfJump",
-        Callback = function(state)
-            if state then
-                game:GetService("UserInputService").JumpRequest:Connect(function()
-                    local plr = Players.LocalPlayer
-                    if plr.Character then
-                        plr.Character:FindFirstChildOfClass("Humanoid").Jump = true
-                    end
-                end)
-            end
-        end
-    })
+TeleportsTab:CreateSection("Cave Teleports")
 
+local function teleportTo(part)
+    local hrp = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if hrp and part then
+        hrp.CFrame = part.CFrame + Vector3.new(0, 3, 0) -- small offset above the part
+    end
+end
+
+-- Add buttons
+local caveParts = {
+    Easy = workspace.MainCave:FindFirstChild("EasyComplete"),
+    Medium = workspace.MainCave:FindFirstChild("MediumComplete"),
+    Hard = workspace.MainCave:FindFirstChild("HardComplete")
+}
+
+for name, part in pairs(caveParts) do
+    if part then
+        TeleportsTab:CreateButton({
+            Name = "Teleport to "..name.." Cave",
+            Callback = function()
+                teleportTo(part)
+            end
+        })
+    end
+ end
+ 
     Rayfield:LoadConfiguration()
 end
