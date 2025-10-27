@@ -400,8 +400,7 @@ function loadMainScript()
 
     --// Tabs
     local AutoTab = Window:CreateTab("Auto")
-    local TeleportsTab = Window:CreateTab("Teleports")
-    --// Toggles storage
+        --// Toggles storage
     local Toggles = {
         Mine = false,
         SellValue = false,
@@ -486,6 +485,7 @@ function loadMainScript()
     })
 
 --// Teleports Tab
+ local TeleportsTab = Window:CreateTab("Teleports")
 TeleportsTab:CreateSection("Cave Teleports")
 
 local function teleportTo(part)
@@ -498,9 +498,9 @@ end
 task.spawn(function()
     repeat task.wait(0.5) until workspace:FindFirstChild("MainCave")
     local caveParts = {
-        Easy = workspace.MainCave:FindFirstChild("EasyComplete"),
-        Medium = workspace.MainCave:FindFirstChild("MediumComplete"),
-        Hard = workspace.MainCave:FindFirstChild("HardComplete")
+        Easy = ws.MainCave:FindFirstChild("EasyComplete"),
+        Medium = ws.MainCave:FindFirstChild("MediumComplete"),
+        Hard = ws.MainCave:FindFirstChild("HardComplete")
     }
 
     for name, part in pairs(caveParts) do
