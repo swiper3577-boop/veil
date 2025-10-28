@@ -390,8 +390,8 @@ function loadMainScript()
     local Window = Rayfield:CreateWindow({
 	Name = "Platoboost | Blueprint System",
 	LoadingTitle = "Loading...",
-	LoadingSubtitle = "by lightinruin"
-  Theme = "Amethyst"
+	LoadingSubtitle = "by lightinruin",
+    Theme = "Amethyst"
 })
 
 
