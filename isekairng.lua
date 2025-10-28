@@ -1,5 +1,6 @@
 -------------------------------------------------------------------------------
--- Libraries (SHA256 + JSON)
+-- Platoboost + Key System + Safe Rayfield Loader
+-------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 --! json library
 --! cryptography library
@@ -311,143 +312,184 @@ else
     print("failed to get flag.");
 end
 ]]--
---------------------------------------------------------------------------------- Assume a3, aw, Z are defined as in your original script
 -------------------------------------------------------------------------------
+--! Libraries (SHA256 + JSON)
+-- Assume a3, aw, Z are defined as in your original Platoboost script
 
+-------------------------------------------------------------------------------
 -- Platoboost Core
+-------------------------------------------------------------------------------
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
+local StarterGui = game:GetService("StarterGui")
 local player = Players.LocalPlayer
-local remote = ReplicatedStorage:WaitForChild("Classes"):WaitForChild("Reply"):WaitForChild("Events"):WaitForChild("Sender")
 
--- Key System (Rayfield instance)
-local KeyRayfield
-do
+-- Wait for the game to load
+repeat task.wait(1) until game:IsLoaded()
+
+-- Remote reference
+local remote
+pcall(function()
+    remote = ReplicatedStorage:WaitForChild("Classes")
+        :WaitForChild("Reply")
+        :WaitForChild("Events")
+        :WaitForChild("Sender")
+end)
+
+-- Platoboost functions (copyLink, verifyKey, getFlag, etc.) assumed to exist
+-------------------------------------------------------------------------------
+
+-- Safe Rayfield Loader
+local function loadRayfield(url, purpose)
     local success, rf = pcall(function()
-        return loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+        return loadstring(game:HttpGet(url))()
     end)
+
     if success and rf then
-        KeyRayfield = rf
+        return rf
     else
-        game:GetService("StarterGui"):SetCore("SendNotification", {
+        StarterGui:SetCore("SendNotification", {
             Title = "UI Load Error",
-            Text = "Failed to load Key System UI",
+            Text = "Failed to load " .. purpose,
             Duration = 5
         })
-        return
+        warn("Rayfield failed to load for", purpose, ":", rf)
+        return nil
     end
 end
+
+-------------------------------------------------------------------------------
+-- Key System GUI
+-------------------------------------------------------------------------------
+local KeyRayfield = loadRayfield("https://sirius.menu/rayfield", "Key System")
+if not KeyRayfield then return end
 
 local keyVerified = false
 local KeyValue = ""
 
 local function onKeyMessage(msg)
-    KeyRayfield:Notify({
-        Title = "Key System",
-        Content = msg,
-        Duration = 5,
-        Image = 0
-    })
+    if KeyRayfield and KeyRayfield.Notify then
+        pcall(function()
+            KeyRayfield:Notify({
+                Title = "Key System",
+                Content = msg,
+                Duration = 5,
+                Image = 0
+            })
+        end)
+    end
 end
 
 -- Key GUI
-local KeyWindow = KeyRayfield:CreateWindow({
-    Name = "Key System",
-    LoadingTitle = "Loading Key System",
-    LoadingSubtitle = "by Borntobleed",
-    ConfigurationSaving = { Enabled = true },
-    KeySystem = false
-})
+local KeyWindow
+pcall(function()
+    KeyWindow = KeyRayfield:CreateWindow({
+        Name = "Key System",
+        LoadingTitle = "Loading Key System",
+        LoadingSubtitle = "by Borntobleed",
+        ConfigurationSaving = { Enabled = true },
+        KeySystem = false
+    })
+end)
 
-local KeyTab = KeyWindow:CreateTab("Key System")
-KeyTab:CreateSection("Authentication Required")
+if not KeyWindow then return end
 
-local KeyInput = KeyTab:CreateInput({
-    Name = "Enter Key",
-    PlaceholderText = "Paste your key here...",
-    RemoveTextAfterFocusLost = false,
-    Callback = function(text)
-        KeyValue = tostring(text or "")
-    end
-})
+local KeyTab
+pcall(function()
+    KeyTab = KeyWindow:CreateTab("Key System")
+    KeyTab:CreateSection("Authentication Required")
+end)
 
-KeyTab:CreateButton({
-    Name = "Get Key (Copy Link)",
-    Callback = function()
-        copyLink()
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Link Copied",
-            Text = "Paste in browser to get your key",
-            Duration = 5
-        })
-    end
-})
-
-KeyTab:CreateButton({
-    Name = "Verify Key",
-    Callback = function()
-        if KeyValue == "" then
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "Error",
-                Text = "Enter a key first",
-                Duration = 3
-            })
-            return
+-- Input
+local KeyInput
+pcall(function()
+    KeyInput = KeyTab:CreateInput({
+        Name = "Enter Key",
+        PlaceholderText = "Paste your key here...",
+        RemoveTextAfterFocusLost = false,
+        Callback = function(text)
+            KeyValue = tostring(text or "")
         end
+    })
+end)
 
-        task.spawn(function()
-            if verifyKey(KeyValue) then
-                keyVerified = true
-                game:GetService("StarterGui"):SetCore("SendNotification", {
-                    Title = "Success",
-                    Text = "Key verified! Loading Auto System...",
-                    Duration = 2
+-- Buttons
+pcall(function()
+    KeyTab:CreateButton({
+        Name = "Get Key (Copy Link)",
+        Callback = function()
+            pcall(copyLink)
+            StarterGui:SetCore("SendNotification", {
+                Title = "Link Copied",
+                Text = "Paste in browser to get your key",
+                Duration = 5
+            })
+        end
+    })
+
+    KeyTab:CreateButton({
+        Name = "Verify Key",
+        Callback = function()
+            if KeyValue == "" then
+                StarterGui:SetCore("SendNotification", {
+                    Title = "Error",
+                    Text = "Enter a key first",
+                    Duration = 3
                 })
+                return
+            end
 
-                -- Destroy any existing Rayfield GUIs
-                pcall(function()
-                    for _, v in pairs(game.CoreGui:GetChildren()) do
-                        if v.Name:match("Rayfield") then
-                            v:Destroy()
-                        end
+            task.spawn(function()
+                local success, err = pcall(function()
+                    if verifyKey(KeyValue) then
+                        keyVerified = true
+                        StarterGui:SetCore("SendNotification", {
+                            Title = "Success",
+                            Text = "Key verified! Loading Auto System...",
+                            Duration = 2
+                        })
+
+                        -- Destroy any existing Rayfield GUIs safely
+                        pcall(function()
+                            for _, v in pairs(game.CoreGui:GetChildren()) do
+                                if v.Name:match("Rayfield") then
+                                    v:Destroy()
+                                end
+                            end
+                        end)
+
+                        -- Load main script safely
+                        loadMainScript()
+                    else
+                        StarterGui:SetCore("SendNotification", {
+                            Title = "Failed",
+                            Text = "Invalid key",
+                            Duration = 5
+                        })
                     end
                 end)
 
-                -- Load main script hub
-                loadMainScript()
-            else
-                game:GetService("StarterGui"):SetCore("SendNotification", {
-                    Title = "Failed",
-                    Text = "Invalid key",
-                    Duration = 5
-                })
-            end
-        end)
-    end
-})
+                if not success then warn("Key verification error:", err) end
+            end)
+        end
+    })
+end)
 
 -------------------------------------------------------------------------------
 -- Main Hub Loader
+-------------------------------------------------------------------------------
 function loadMainScript()
-    local Rayfield
-    local success, rf = pcall(function()
-        return loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
-    end)
-    if success and rf then
-        Rayfield = rf
-    else
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "UI Load Error",
-            Text = "Failed to load Main Hub",
-            Duration = 5
-        })
-        return
-    end
+    local Rayfield = loadRayfield("https://sirius.menu/rayfield", "Main Hub")
+    if not Rayfield then return end
 
     -- Safe FireServer wrapper
     local function safeFire(args)
-        local ok, err = pcall(function() remote:FireServer(unpack(args)) end)
+        local ok, err = pcall(function()
+            if remote then
+                remote:FireServer(unpack(args))
+            end
+        end)
         if not ok then warn("FireServer failed:", err) end
     end
 
@@ -458,7 +500,9 @@ function loadMainScript()
         if not screen then return nil end
         local inv = screen:FindFirstChild("011_Inventory")
         if not inv then return nil end
-        local ok, menu = pcall(function() return inv:WaitForChild("Menu"):WaitForChild("ScrollingFrame") end)
+        local ok, menu = pcall(function()
+            return inv:WaitForChild("Menu"):WaitForChild("ScrollingFrame")
+        end)
         return ok and menu or nil
     end
 
@@ -468,113 +512,146 @@ function loadMainScript()
         return lvl and tonumber(lvl) or nil
     end
 
-    -- Create main Rayfield window
-    local Window = Rayfield:CreateWindow({
-        Name = "Platoboost | Auto System",
-        LoadingTitle = "Platoboost",
-        LoadingSubtitle = "Auto System",
-        ConfigurationSaving = { Enabled = false }
-    })
+    -- Create main Rayfield window safely
+    local Window
+    pcall(function()
+        Window = Rayfield:CreateWindow({
+            Name = "Platoboost | Auto System",
+            LoadingTitle = "Platoboost",
+            LoadingSubtitle = "Auto System",
+            ConfigurationSaving = { Enabled = false }
+        })
+    end)
+    if not Window then return end
 
     -- Tabs
-    local huntTab = Window:CreateTab("Hunting")
-    local chestTab = Window:CreateTab("Chests")
-    local invTab = Window:CreateTab("Inventory")
+    local huntTab, chestTab, invTab
+    pcall(function()
+        huntTab = Window:CreateTab("Hunting")
+        chestTab = Window:CreateTab("Chests")
+        invTab = Window:CreateTab("Inventory")
+    end)
 
     -- HUNTING
     local huntDelay, zoneStart, stageStart, maxZone = 3, 1, 1, 3
     local autoHunt = false
-    huntTab:CreateToggle({
-        Name = "Auto Select Stage",
-        CurrentValue = false,
-        Callback = function(val)
-            autoHunt = val
-            if val then
-                task.spawn(function()
-                    local curZone, curStage = zoneStart, stageStart
-                    while autoHunt do
-                        safeFire({
-                            [1] = "Hunt",
-                            [2] = { [1] = "SelectStage", [2] = { ["ZoneSelect"]=curZone, ["StageSelect"]=curStage, ["Next"]=true } }
-                        })
-                        curStage = curStage + 1
-                        if curStage > 10 then curStage=1; curZone=curZone+1 if curZone>maxZone then curZone=zoneStart end end
-                        task.wait(huntDelay)
-                    end
-                end)
+    pcall(function()
+        huntTab:CreateToggle({
+            Name = "Auto Select Stage",
+            CurrentValue = false,
+            Callback = function(val)
+                autoHunt = val
+                if val then
+                    task.spawn(function()
+                        local curZone, curStage = zoneStart, stageStart
+                        while autoHunt do
+                            safeFire({
+                                [1] = "Hunt",
+                                [2] = { [1] = "SelectStage", [2] = { ["ZoneSelect"]=curZone, ["StageSelect"]=curStage, ["Next"]=true } }
+                            })
+                            curStage = curStage + 1
+                            if curStage > 10 then
+                                curStage = 1
+                                curZone = curZone + 1
+                                if curZone > maxZone then curZone = zoneStart end
+                            end
+                            task.wait(huntDelay)
+                        end
+                    end)
+                end
             end
-        end
-    })
-    huntTab:CreateSlider({ Name="Delay (s)", Range={0.5,10}, Increment=0.5, Suffix="sec", CurrentValue=huntDelay,
-        Callback=function(val) huntDelay=val end })
-    huntTab:CreateInput({ Name="Start Zone", PlaceholderText=tostring(zoneStart),
-        Callback=function(val) local n=tonumber(val) if n and n>=1 then zoneStart=math.floor(n) end end })
-    huntTab:CreateInput({ Name="Start Stage", PlaceholderText=tostring(stageStart),
-        Callback=function(val) local n=tonumber(val) if n and n>=1 then stageStart=math.floor(n) end end })
-    huntTab:CreateInput({ Name="Max Zone (wrap)", PlaceholderText=tostring(maxZone),
-        Callback=function(val) local n=tonumber(val) if n and n>=1 then maxZone=math.floor(n) end end })
+        })
+        huntTab:CreateSlider({
+            Name="Delay (s)", Range={0.5,10}, Increment=0.5, Suffix="sec", CurrentValue=huntDelay,
+            Callback=function(val) huntDelay=val end
+        })
+        huntTab:CreateInput({
+            Name="Start Zone", PlaceholderText=tostring(zoneStart),
+            Callback=function(val) local n=tonumber(val) if n and n>=1 then zoneStart=math.floor(n) end end
+        })
+        huntTab:CreateInput({
+            Name="Start Stage", PlaceholderText=tostring(stageStart),
+            Callback=function(val) local n=tonumber(val) if n and n>=1 then stageStart=math.floor(n) end end
+        })
+        huntTab:CreateInput({
+            Name="Max Zone (wrap)", PlaceholderText=tostring(maxZone),
+            Callback=function(val) local n=tonumber(val) if n and n>=1 then maxZone=math.floor(n) end end
+        })
+    end)
 
     -- CHESTS
     local autoChest, chestDelay, chestAmount = false, 10, 4
-    chestTab:CreateToggle({
-        Name="Auto Open Chest", CurrentValue=false,
-        Callback=function(state)
-            autoChest=state
-            if state then
-                task.spawn(function()
-                    while autoChest do
-                        safeFire({[1]="OpenChest",[2]={[1]=chestAmount}})
-                        task.wait(chestDelay)
-                    end
-                end)
+    pcall(function()
+        chestTab:CreateToggle({
+            Name="Auto Open Chest", CurrentValue=false,
+            Callback=function(state)
+                autoChest=state
+                if state then
+                    task.spawn(function()
+                        while autoChest do
+                            safeFire({[1]="OpenChest",[2]={[1]=chestAmount}})
+                            task.wait(chestDelay)
+                        end
+                    end)
+                end
             end
-        end
-    })
-    chestTab:CreateDropdown({ Name="Amount per Open", Options={"1","4"}, CurrentOption=tostring(chestAmount),
-        Callback=function(opt) chestAmount=tonumber(opt) end })
-    chestTab:CreateSlider({ Name="Delay (s)", Range={1,60}, Increment=1, Suffix="sec", CurrentValue=chestDelay,
-        Callback=function(val) chestDelay=val end })
+        })
+        chestTab:CreateDropdown({
+            Name="Amount per Open", Options={"1","4"}, CurrentOption=tostring(chestAmount),
+            Callback=function(opt) chestAmount=tonumber(opt) end
+        })
+        chestTab:CreateSlider({
+            Name="Delay (s)", Range={1,60}, Increment=1, Suffix="sec", CurrentValue=chestDelay,
+            Callback=function(val) chestDelay=val end
+        })
+    end)
 
     -- INVENTORY
     local autoDismantle, dismantleDelay, dismantleLevel = false, 5, 1
-    invTab:CreateToggle({
-        Name="Auto Dismantle", CurrentValue=false,
-        Callback=function(val)
-            autoDismantle=val
-            if val then
-                task.spawn(function()
-                    while autoDismantle do
-                        local menu=getInventoryFrame()
-                        if menu then
-                            for _, item in pairs(menu:GetChildren()) do
-                                local label=item:FindFirstChildWhichIsA and item:FindFirstChildWhichIsA("TextLabel") or item:FindFirstChild("TextLabel")
-                                if label and label.Text then
-                                    local lvl=extractLevel(label.Text)
-                                    if lvl and lvl<=dismantleLevel then
-                                        safeFire({ [1]="Inventory", [2]={ [1]="Dismantle", [2]={ ["SelectedItens"]={item.Name} } } })
-                                        task.wait(0.2)
+    pcall(function()
+        invTab:CreateToggle({
+            Name="Auto Dismantle", CurrentValue=false,
+            Callback=function(val)
+                autoDismantle=val
+                if val then
+                    task.spawn(function()
+                        while autoDismantle do
+                            local menu=getInventoryFrame()
+                            if menu then
+                                for _, item in pairs(menu:GetChildren()) do
+                                    local label = item:FindFirstChildWhichIsA and item:FindFirstChildWhichIsA("TextLabel") or item:FindFirstChild("TextLabel")
+                                    if label and label.Text then
+                                        local lvl = extractLevel(label.Text)
+                                        if lvl and lvl <= dismantleLevel then
+                                            safeFire({ [1]="Inventory", [2]={ [1]="Dismantle", [2]={ ["SelectedItens"]={item.Name} } } })
+                                            task.wait(0.2)
+                                        end
                                     end
                                 end
                             end
+                            task.wait(dismantleDelay)
                         end
-                        task.wait(dismantleDelay)
-                    end
-                end)
+                    end)
+                end
             end
-        end
-    })
-    invTab:CreateSlider({ Name="Dismantle Level Threshold", Range={0,20}, Increment=1, Suffix="Lvl", CurrentValue=dismantleLevel,
-        Callback=function(val) dismantleLevel=math.floor(val) end })
-    invTab:CreateSlider({ Name="Scan Delay (s)", Range={1,30}, Increment=1, Suffix="sec", CurrentValue=dismantleDelay,
-        Callback=function(val) dismantleDelay=val end })
+        })
+        invTab:CreateSlider({
+            Name="Dismantle Level Threshold", Range={0,20}, Increment=1, Suffix="Lvl", CurrentValue=dismantleLevel,
+            Callback=function(val) dismantleLevel=math.floor(val) end
+        })
+        invTab:CreateSlider({
+            Name="Scan Delay (s)", Range={1,30}, Increment=1, Suffix="sec", CurrentValue=dismantleDelay,
+            Callback=function(val) dismantleDelay=val end
+        })
+    end)
 
     -- Optional buttons
-    invTab:CreateButton({ Name="Example: OpenChest (4)", Callback=function() safeFire({[1]="OpenChest",[2]={[1]=4}}) end })
-    invTab:CreateButton({ Name="Example: Hunt Stage (Zone1 Stage3)", Callback=function() safeFire({[1]="Hunt",[2]={[1]="SelectStage",[2]={["ZoneSelect"]=1,["StageSelect"]=3}}}) end })
-    invTab:CreateButton({ Name="Example: Dismantle Specific ID", Callback=function() safeFire({[1]="Inventory",[2]={[1]="Dismantle",[2]={["SelectedItens"]={"ID-8384190446-aedcb00a-a04e-4f10-92ad-cfce4d4404ef"}}}}) end })
+    pcall(function()
+        invTab:CreateButton({ Name="Example: OpenChest (4)", Callback=function() safeFire({[1]="OpenChest",[2]={[1]=4}}) end })
+        invTab:CreateButton({ Name="Example: Hunt Stage (Zone1 Stage3)", Callback=function() safeFire({[1]="Hunt",[2]={[1]="SelectStage",[2]={["ZoneSelect"]=1,["StageSelect"]=3}}}) end })
+        invTab:CreateButton({ Name="Example: Dismantle Specific ID", Callback=function() safeFire({[1]="Inventory",[2]={[1]="Dismantle",[2]={["SelectedItens"]={"ID-8384190446-aedcb00a-a04e-4f10-92ad-cfce4d4404ef"}}}}) end })
+    end)
 
-    print("Platoboost | Auto System loaded. Toggles control automation.")
-
-    -- Load configuration AFTER window is created
-    Rayfield:LoadConfiguration()
+    print("Platoboost | Auto System loaded safely.")
+    pcall(function() Rayfield:LoadConfiguration() end)
 end
