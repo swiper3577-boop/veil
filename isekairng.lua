@@ -521,6 +521,6 @@ function loadMainScript()
     invTab:CreateButton({ Name="Example: Dismantle Specific ID", Callback=function() safeFire({[1]="Inventory",[2]={[1]="Dismantle",[2]={["SelectedItens"]={"ID-8384190446-aedcb00a-a04e-4f10-92ad-cfce4d4404ef"}}}}) end })
 
     print("Platoboost | Auto System loaded. Toggles control automation.")
-end
+
 Rayfield:LoadConfiguration()
 end
