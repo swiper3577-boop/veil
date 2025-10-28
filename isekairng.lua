@@ -260,18 +260,11 @@ local function getFlag(name)
     end
 end
 --// Services
-local rs = game:GetService("ReplicatedStorage")
-local ws = game:GetService("Workspace")
-local plr = game.Players.LocalPlayer
---// Safely get player's plot
-local function getPlayerPlot()
-	for _, plot in ipairs(ws.CityPlots:GetChildren()) do
-		if plot:FindFirstChild(plr.Name) then
-			return plot[plr.Name]
-		end
-	end
-	return nil
-end
+    local Players = game:GetService("Players")
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local Workspace = game:GetService("Workspace")
+    local player = Players.LocalPlayer
+    local remote = ReplicatedStorage:WaitForChild("Classes"):WaitForChild("Reply"):WaitForChild("Events"):WaitForChild("Sender")--// Safely get player's plot
 --// Key System (separate Rayfield instance)
 local KeyRayfield
 do
@@ -399,11 +392,7 @@ function loadMainScript()
     end
 
     -- Platoboost | Auto System
-    local Players = game:GetService("Players")
-    local ReplicatedStorage = game:GetService("ReplicatedStorage")
-    local Workspace = game:GetService("Workspace")
-    local player = Players.LocalPlayer
-    local remote = ReplicatedStorage:WaitForChild("Classes"):WaitForChild("Reply"):WaitForChild("Events"):WaitForChild("Sender")
+
 
     local function safeFire(args)
         local ok, err = pcall(function() remote:FireServer(unpack(args)) end)
