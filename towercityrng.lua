@@ -297,7 +297,7 @@ end
 local KeyWindow = KeyRayfield:CreateWindow({
     Name = "Key System",
     LoadingTitle = "Loading Key System",
-    LoadingSubtitle = "by Platoboost",
+    LoadingSubtitle = "by Borntobleed",
     ConfigurationSaving = { Enabled = true },
     KeySystem = false
 })
@@ -368,6 +368,7 @@ KeyTab:CreateButton({
 })
 
 --// Main Script Loader
+
 function loadMainScript()
     local Rayfield
     do
@@ -386,13 +387,12 @@ function loadMainScript()
         end
     end
 
-    --// Window
     local Window = Rayfield:CreateWindow({
-	Name = "Platoboost | Blueprint System",
-	LoadingTitle = "Loading...",
-	LoadingSubtitle = "by lightinruin",
-    Theme = "Amethyst"
-})
+        Name = "Tower City Rng 🏙",
+        LoadingTitle = "Loading...",
+        LoadingSubtitle = "by lightinruin",
+        Theme = "Amethyst"
+    })
 
 
 local Tab = Window:CreateTab("Blueprints")
