@@ -352,7 +352,7 @@ KeyTab:CreateButton({
                 -- destroy old Rayfield GUI (key + main)
                 pcall(function()
                     for _, v in pairs(game.CoreGui:GetChildren()) do
-                        if v.Name:match("Rayfield") then
+                        if v.Name:match("KeyRayfield") then
                             v:Destroy()
                         end
                     end
