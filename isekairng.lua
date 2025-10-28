@@ -645,13 +645,6 @@ function loadMainScript()
         })
     end)
 
-    -- Optional buttons
-    pcall(function()
-        invTab:CreateButton({ Name="Example: OpenChest (4)", Callback=function() safeFire({[1]="OpenChest",[2]={[1]=4}}) end })
-        invTab:CreateButton({ Name="Example: Hunt Stage (Zone1 Stage3)", Callback=function() safeFire({[1]="Hunt",[2]={[1]="SelectStage",[2]={["ZoneSelect"]=1,["StageSelect"]=3}}}) end })
-        invTab:CreateButton({ Name="Example: Dismantle Specific ID", Callback=function() safeFire({[1]="Inventory",[2]={[1]="Dismantle",[2]={["SelectedItens"]={"ID-8384190446-aedcb00a-a04e-4f10-92ad-cfce4d4404ef"}}}}) end })
-    end)
-
     print("Platoboost | Auto System loaded safely.")
     pcall(function() Rayfield:LoadConfiguration() end)
 end
