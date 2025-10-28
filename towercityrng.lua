@@ -263,7 +263,15 @@ end
 local rs = game:GetService("ReplicatedStorage")
 local ws = game:GetService("Workspace")
 local plr = game.Players.LocalPlayer
-
+--// Safely get player's plot
+local function getPlayerPlot()
+	for _, plot in ipairs(ws.CityPlots:GetChildren()) do
+		if plot:FindFirstChild(plr.Name) then
+			return plot[plr.Name]
+		end
+	end
+	return nil
+end
 --// Key System (separate Rayfield instance)
 local KeyRayfield
 do
@@ -386,24 +394,26 @@ function loadMainScript()
             return
         end
     end
+	
 
-    local Window = Rayfield:CreateWindow({
-        Name = "Tower City Rng 🏙",
-        LoadingTitle = "Loading...",
-        LoadingSubtitle = "by lightinruin",
-        Theme = "Amethyst"
-    })
+--// Main Hub (Rayfield)
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
+local Window = Rayfield:CreateWindow({
+	Name = "Platoboost | Blueprint System",
+	LoadingTitle = "Loading...",
+	LoadingSubtitle = "by lightinruin",
+	Theme = "Amethyst"
+})
 
 local Tab = Window:CreateTab("Blueprints")
 
---// Blueprint list
+--// Blueprint list and purchasing system
 local blueprintTypes = {
 	"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Galactic", "Infernal"
 }
 
---// Dropdown for blueprint interactions
-local SelectedBlueprint = nil
+local SelectedBlueprint = "Common"
 
 Tab:CreateDropdown({
 	Name = "Select Blueprint Type",
@@ -412,9 +422,45 @@ Tab:CreateDropdown({
 	MultipleOptions = false,
 	Callback = function(option)
 		SelectedBlueprint = option
-		local blueprintFolder = ws:FindFirstChild("Blueprints")
-		if blueprintFolder and blueprintFolder:FindFirstChild(option) then
-			local prompt = blueprintFolder[option]:FindFirstChildOfClass("ProximityPrompt")
+	end
+})
+
+Tab:CreateButton({
+	Name = "Purchase Selected Blueprint",
+	Callback = function()
+		local blueprintTypesFolder = rs:FindFirstChild("BlueprintTypes")
+		if not blueprintTypesFolder then
+			Rayfield:Notify({
+				Title = "Error",
+				Content = "BlueprintTypes folder missing in ReplicatedStorage.",
+				Duration = 5
+			})
+			return
+		end
+
+		local blueprintObj = blueprintTypesFolder:FindFirstChild(SelectedBlueprint)
+		if not blueprintObj then
+			Rayfield:Notify({
+				Title = "Error",
+				Content = "Invalid blueprint type selected.",
+				Duration = 5
+			})
+			return
+		end
+
+		local args = {
+			[1] = tostring(game:GetService("HttpService"):GenerateGUID(false))
+		}
+		rs.Remotes.BuyBlueprint:InvokeServer(unpack(args))
+	end
+})
+
+Tab:CreateButton({
+	Name = "Trigger Selected Blueprint Prompt",
+	Callback = function()
+		local bpFolder = ws:FindFirstChild("Blueprints")
+		if bpFolder and bpFolder:FindFirstChild(SelectedBlueprint) then
+			local prompt = bpFolder[SelectedBlueprint]:FindFirstChildOfClass("ProximityPrompt")
 			if prompt then
 				fireproximityprompt(prompt)
 			end
@@ -422,26 +468,43 @@ Tab:CreateDropdown({
 	end
 })
 
---// TouchInterest section
-Tab:CreateButton({
-	Name = "Activate All TouchInterests",
-	Callback = function()
-		local slots = ws.CityPlots.Swiper357.Segments.RoadSegment.Slots:GetChildren()
-		for _, slot in ipairs(slots) do
-			for _, model in ipairs(slot:GetChildren()) do
-				for _, obj in ipairs(model:GetDescendants()) do
-					if obj:IsA("TouchTransmitter") then
-						local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-						if hrp then
-							firetouchinterest(hrp, obj.Parent, 0)
-							task.wait(0.1)
-							firetouchinterest(hrp, obj.Parent, 1)
+--// TouchInterest Auto System
+local autoTouch = false
+
+Tab:CreateToggle({
+	Name = "Auto TouchInterests",
+	CurrentValue = false,
+	Callback = function(state)
+		autoTouch = state
+		task.spawn(function()
+			while autoTouch do
+				local plot = getPlayerPlot()
+				if plot and plot:FindFirstChild("Segments") then
+					for _, segment in ipairs(plot.Segments:GetChildren()) do
+						if segment:FindFirstChild("RoadSegment") then
+							local slots = segment.RoadSegment.Slots:GetChildren()
+							for _, slot in ipairs(slots) do
+								for _, model in ipairs(slot:GetChildren()) do
+									for _, obj in ipairs(model:GetDescendants()) do
+										if obj:IsA("TouchTransmitter") then
+											local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+											if hrp then
+												firetouchinterest(hrp, obj.Parent, 0)
+												task.wait(0.1)
+												firetouchinterest(hrp, obj.Parent, 1)
+											end
+										end
+									end
+								end
+							end
 						end
 					end
 				end
+				task.wait(3) -- how often it cycles; adjust as needed
 			end
-		end
+		end)
 	end
 })
-    Rayfield:LoadConfiguration()
+
+Rayfield:LoadConfiguration()
 end
