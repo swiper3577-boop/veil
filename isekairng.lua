@@ -380,19 +380,18 @@ KeyTab:CreateButton({
 function loadMainScript()
     local Rayfield
     do
-        local success, rf = pcall(function()
-            return loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
-        end)
-        if success and rf then
-            Rayfield = rf
-        else
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "UI Load Error",
-                Text = "Failed to load Main Hub",
-                Duration = 5
-            })
-            return
-        end
+        local success, Rayfield = pcall(function()
+    return loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+end)
+
+if not success or not Rayfield then
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "UI Load Error",
+        Text = "Failed to load Main Hub",
+        Duration = 5
+    })
+    return
+		end
     end
 
     -- Platoboost | Auto System (Rayfield) - All features automatic with toggles
