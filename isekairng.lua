@@ -334,6 +334,7 @@ KeyTab:CreateButton({
     end
 })
 
+--// Key Verification Callback
 KeyTab:CreateButton({
     Name = "Verify Key",
     Callback = function()
@@ -351,19 +352,22 @@ KeyTab:CreateButton({
                 keyVerified = true
                 game:GetService("StarterGui"):SetCore("SendNotification", {
                     Title = "Success",
-                    Text = "Key verified! Loading script...",
+                    Text = "Key verified! Loading Auto System...",
                     Duration = 2
                 })
 
-                -- destroy old key UI
+                -- destroy old Rayfield GUI (key + main)
                 pcall(function()
                     for _, v in pairs(game.CoreGui:GetChildren()) do
-                        if v.Name:match("Rayfield") then v:Destroy() end
+                        if v.Name:match("Rayfield") then
+                            v:Destroy()
+                        end
                     end
                 end)
 
-                -- load main auto hub
+                -- load the new main script hub
                 loadMainScript()
+
             else
                 game:GetService("StarterGui"):SetCore("SendNotification", {
                     Title = "Failed",
@@ -375,27 +379,26 @@ KeyTab:CreateButton({
     end
 })
 
---// Main Script Loader
---// Main Script Loader (Rewritten)
+--// Main Script Loader (new working hub)
 function loadMainScript()
     local Rayfield
     do
-        local success, Rayfield = pcall(function()
-    return loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
-end)
-
-if not success or not Rayfield then
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "UI Load Error",
-        Text = "Failed to load Main Hub",
-        Duration = 5
-    })
-    return
-		end
+        local success, rf = pcall(function()
+            return loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+        end)
+        if success and rf then
+            Rayfield = rf
+        else
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "UI Load Error",
+                Text = "Failed to load Main Hub",
+                Duration = 5
+            })
+            return
+        end
     end
 
-    -- Platoboost | Auto System (Rayfield) - All features automatic with toggles
-    -- CONFIG / UTIL
+    -- Platoboost | Auto System
     local Players = game:GetService("Players")
     local ReplicatedStorage = game:GetService("ReplicatedStorage")
     local Workspace = game:GetService("Workspace")
@@ -442,7 +445,6 @@ if not success or not Rayfield then
     huntTab:CreateToggle({
         Name = "Auto Select Stage",
         CurrentValue = false,
-        Flag = "AutoHuntToggle",
         Callback = function(val)
             autoHunt = val
             if val then
@@ -524,19 +526,10 @@ if not success or not Rayfield then
     invTab:CreateSlider({ Name="Scan Delay (s)", Range={1,30}, Increment=1, Suffix="sec", CurrentValue=dismantleDelay,
         Callback=function(val) dismantleDelay=val end })
 
-    -- Optional: add manual example buttons as in original script
-    invTab:CreateButton({
-        Name="Example: OpenChest (4)",
-        Callback=function() safeFire({[1]="OpenChest",[2]={[1]=4}}) end
-    })
-    invTab:CreateButton({
-        Name="Example: Hunt Stage (Zone1 Stage3)",
-        Callback=function() safeFire({[1]="Hunt",[2]={[1]="SelectStage",[2]={["ZoneSelect"]=1,["StageSelect"]=3}}}) end
-    })
-    invTab:CreateButton({
-        Name="Example: Dismantle Specific ID",
-        Callback=function() safeFire({[1]="Inventory",[2]={[1]="Dismantle",[2]={["SelectedItens"]={"ID-8384190446-aedcb00a-a04e-4f10-92ad-cfce4d4404ef"}}}}) end
-    })
+    -- Optional example buttons
+    invTab:CreateButton({ Name="Example: OpenChest (4)", Callback=function() safeFire({[1]="OpenChest",[2]={[1]=4}}) end })
+    invTab:CreateButton({ Name="Example: Hunt Stage (Zone1 Stage3)", Callback=function() safeFire({[1]="Hunt",[2]={[1]="SelectStage",[2]={["ZoneSelect"]=1,["StageSelect"]=3}}}) end })
+    invTab:CreateButton({ Name="Example: Dismantle Specific ID", Callback=function() safeFire({[1]="Inventory",[2]={[1]="Dismantle",[2]={["SelectedItens"]={"ID-8384190446-aedcb00a-a04e-4f10-92ad-cfce4d4404ef"}}}}) end })
 
     print("Platoboost | Auto System loaded. Toggles control automation.")
 end
